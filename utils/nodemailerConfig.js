@@ -3,8 +3,8 @@ const config = {
   port: 587,
   secure: false, // Use `true` for port 465, `false` for all other ports
   auth: {
-    user: "rylee.fahey@ethereal.email",
-    pass: "sHuxDu35WFATjzNb4j",
+    user: "dexter39@ethereal.email",
+    pass: "d2QCCu9HrnQDRNahkm",
   },
 };
 

@@ -36,6 +36,7 @@ const register = async (req, res) => {
     name,
     password,
     role: "user",
+    storageLimit: process.env.USER_MAXSIZE,
     verificationCode: createHash(tempVerificationCode),
   });
 

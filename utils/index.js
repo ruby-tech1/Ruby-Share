@@ -3,11 +3,14 @@ import createTokenUser from "./createTokenUser.js";
 import checkPermissions from "./checkPermissions.js";
 import sendVerificationEmail from "./sendVerificationEmail.js";
 import sendResetPasswordEmail from "./sendResetPasswordEmail.js";
-import createHash from "./createHash.js";
 import __dirname from "./dirname.js";
-import { randomHash } from "./createHash.js";
+import { randomHash, createHash } from "./createHash.js";
 import S3Client from "./S3Client.js";
 import removeAllFiles from "./EmptyDir.js";
+import {
+  sendFileSharerEmail,
+  sendFileSharedEmail,
+} from "./sendFileSharedEmail.js";
 
 export {
   createJWT,
@@ -22,4 +25,6 @@ export {
   randomHash,
   S3Client,
   removeAllFiles,
+  sendFileSharerEmail,
+  sendFileSharedEmail,
 };

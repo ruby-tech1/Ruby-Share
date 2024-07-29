@@ -32,6 +32,10 @@ const UserSchema = new mongoose.Schema({
     type: Number,
     default: 0,
   },
+  storageLimit: {
+    type: Number,
+    required: true,
+  },
   verificationCode: {
     type: String,
   },

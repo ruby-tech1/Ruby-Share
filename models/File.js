@@ -38,16 +38,18 @@ const FileSchema = new mongoose.Schema(
     },
     sharedUsers: {
       type: [mongoose.Types.ObjectId],
-      default: null,
+      default: [],
     },
   },
   { timestamps: true }
 );
 
 FileSchema.pre("save", async function () {
+  if (!this.isNew) return;
+
   const user = await this.model("User").findOne({ _id: this.user });
 
-  if (user.storageUsed + this.size > process.env.USER_MAXSIZE) {
+  if (user.storageUsed + this.size > user.storageLimit) {
     throw new CustomError.BadRequestError("Storage limit exceeded");
   }
   user.storageUsed = user.storageUsed + this.size;

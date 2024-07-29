@@ -1,11 +1,14 @@
 import { DeleteObjectCommand, PutObjectCommand } from "@aws-sdk/client-s3";
 import { promises as fs } from "fs";
 import File from "../models/File.js";
+import User from "../models/User.js";
 import {
   randomHash,
   S3Client,
   removeAllFiles,
   __dirname,
+  sendFileSharerEmail,
+  sendFileSharedEmail,
 } from "../utils/index.js";
 import path from "path";
 import { StatusCodes } from "http-status-codes";
@@ -15,14 +18,14 @@ import dotenv from "dotenv";
 dotenv.config();
 
 export const createFile = async (req, res) => {
+  if (!req.files) {
+    throw new CustomError.BadRequestError("No File Uploaded");
+  }
+
   const {
     files: { fileUpload },
     user: { userId },
   } = req;
-
-  if (!req.files) {
-    throw new CustomError.BadRequestError("No File Uploaded");
-  }
 
   let fileCreated = [];
 
@@ -95,9 +98,13 @@ export const createFile = async (req, res) => {
 };
 
 export const getAllFiles = async (req, res) => {
-  const { search, mimetype, sort } = req.query;
+  const { search, mimetype, sort, shared } = req.query;
 
-  const queryObject = { user: req.user.userId };
+  let queryObject = { user: req.user.userId };
+
+  if (shared) {
+    queryObject = { sharedUsers: req.user.userId };
+  }
 
   if (search) {
     queryObject.name = { $regex: search, $options: "i" };
@@ -148,6 +155,7 @@ export const getAllFiles = async (req, res) => {
         size: item.size,
         mimetype: item.mimetype,
         isFileShared: item.isFileShared,
+        sharedUsers: !shared ? item.sharedUsers : "",
         url,
       },
     ];
@@ -164,14 +172,21 @@ export const getSingleFile = async (req, res) => {
     params: { id: fileId },
   } = req;
 
-  const file = await File.findOne({ _id: fileId, user: userId });
+  const queryObject = { _id: fileId };
 
+  if (req.query.shared) {
+    queryObject.sharedUsers = userId;
+  } else {
+    queryObject.user = userId;
+  }
+
+  const file = await File.findOne(queryObject);
   if (!file) {
     throw new CustomError.NotFoundError("File not found");
   }
 
   const url = await file.getUrl(S3Client, file.fileName);
-  let tempFile = {
+  const tempFile = {
     _id: file._id,
     name: file.name,
     size: file.size,
@@ -184,13 +199,54 @@ export const getSingleFile = async (req, res) => {
 };
 
 export const updateFile = async (req, res) => {
-  res.status(StatusCodes.CREATED).json("update file file");
+  const {
+    body: { sharedUsers, name },
+    params: { id: fileId },
+    user: { userId, name: userName, email: userEmail },
+  } = req;
+
+  let file = await File.findOne({ _id: fileId, user: userId });
+  if (!file) {
+    throw new CustomError.NotFoundError("File not found");
+  }
+
+  if (name) {
+    file.name = name;
+  }
+
+  if (sharedUsers) {
+    file.sharedUsers = [...file.sharedUsers, ...sharedUsers];
+    if (!file.isFileShared) {
+      file.isFileShared = true;
+    }
+
+    for (let user of sharedUsers) {
+      const shared = await User.findOne({ _id: user });
+
+      await sendFileSharerEmail({
+        name: userName,
+        email: userEmail,
+        sharedEmail: shared.email,
+        fileName: file.name,
+      });
+      await sendFileSharedEmail({
+        name: shared.name,
+        email: userEmail,
+        sharedEmail: shared.email,
+        fileName: file.name,
+      });
+    }
+  }
+
+  file = await file.save();
+
+  res.status(StatusCodes.CREATED).json({ file });
 };
 
 export const deleteFIle = async (req, res) => {
   const { id: fileId } = req.params;
 
-  const file = await File.findOneAndDelete({
+  const file = await File.findOne({
     _id: fileId,
     user: req.user.userId,
   });
