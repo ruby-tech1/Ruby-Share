@@ -6,8 +6,8 @@ on:
 
 jobs:
   deploy:
-    	runs-on: self-hosted
-
-      steps:
-        - name: Run deploy script
-          run: sh /home/ubuntu/deploy.sh
+    runs-on: self-hosted
+     
+    steps:
+      - name: Run deploy script
+        run: sh /home/ubuntu/deploy.sh
