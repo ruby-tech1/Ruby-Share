@@ -3,6 +3,11 @@ import { GetObjectCommand } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import CustomError from "../errors/index.js";
 
+const duplicateArrayValidator = (array) => {
+  const temp = array.map((user) => user.toString());
+  return new Set(temp).size === array.length;
+};
+
 const FileSchema = new mongoose.Schema(
   {
     name: {
@@ -39,6 +44,18 @@ const FileSchema = new mongoose.Schema(
     sharedUsers: {
       type: [mongoose.Types.ObjectId],
       default: [],
+      validate: {
+        validator: (arr) => duplicateArrayValidator(arr),
+        message: "user already exist",
+      },
+    },
+    openedAt: {
+      type: Date,
+      default: Date.now(),
+    },
+    clicks: {
+      type: Number,
+      default: 0,
     },
   },
   { timestamps: true }
@@ -67,7 +84,7 @@ FileSchema.pre(
   }
 );
 
-FileSchema.methods.getUrl = async function (S3Client, fileName) {
+FileSchema.methods.getUrl = async function ({ S3Client, fileName }) {
   const getObjectParams = {
     Bucket: process.env.S3_BUCKET,
     Key: fileName,

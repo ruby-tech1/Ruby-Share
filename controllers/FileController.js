@@ -2,6 +2,7 @@ import { DeleteObjectCommand, PutObjectCommand } from "@aws-sdk/client-s3";
 import { promises as fs } from "fs";
 import File from "../models/File.js";
 import User from "../models/User.js";
+import { createUrl } from "./UrlController.js";
 import {
   randomHash,
   S3Client,
@@ -13,9 +14,6 @@ import {
 import path from "path";
 import { StatusCodes } from "http-status-codes";
 import CustomError from "../errors/index.js";
-
-import dotenv from "dotenv";
-dotenv.config();
 
 export const createFile = async (req, res) => {
   if (!req.files) {
@@ -146,7 +144,11 @@ export const getAllFiles = async (req, res) => {
 
   let tempFiles = [];
   for (const item of files) {
-    const url = await item.getUrl(S3Client, item.fileName);
+    // let url = await item.getUrl(S3Client, item.fileName);
+    let url = await createUrl({
+      file: item,
+      S3: S3Client,
+    });
     tempFiles = [
       ...tempFiles,
       {
@@ -155,6 +157,7 @@ export const getAllFiles = async (req, res) => {
         size: item.size,
         mimetype: item.mimetype,
         isFileShared: item.isFileShared,
+        user: item.user,
         sharedUsers: !shared ? item.sharedUsers : "",
         url,
       },
@@ -185,11 +188,16 @@ export const getSingleFile = async (req, res) => {
     throw new CustomError.NotFoundError("File not found");
   }
 
-  const url = await file.getUrl(S3Client, file.fileName);
+  // let url = await file.getUrl(S3Client, file.fileName);
+  let url = await createUrl({
+    file,
+    S3: S3Client,
+  });
   const tempFile = {
     _id: file._id,
     name: file.name,
     size: file.size,
+    user: file.user,
     mimetype: file.mimetype,
     isFileShared: file.isFileShared,
     url,

@@ -4,8 +4,6 @@ import "express-async-errors";
 
 import express from "express";
 const app = express();
-import path from "path";
-import url from "url";
 
 // Database Connection
 import connectDB from "./db/connect.js";
@@ -25,6 +23,10 @@ import rateLimiter from "express-rate-limit";
 import AuthRouter from "./routes/AuthRouter.js";
 import UserRouter from "./routes/UserRouter.js";
 import FileRouter from "./routes/FileRouter.js";
+import UrlRouter from "./routes/UrlRouter.js";
+
+// Cron Job
+import cronJob from './cron_jobs/index.js'
 
 import { AutheticateUser } from "./middleware/authentication.js";
 
@@ -32,8 +34,6 @@ import { AutheticateUser } from "./middleware/authentication.js";
 import ErrorHandlerMiddleware from "./middleware/error-handler.js";
 import NotFoundMiddleware from "./middleware/error-handler.js";
 
-const __filename = url.fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
 
 app.set("trust proxy", 1);
 app.use(express.json());
@@ -68,6 +68,7 @@ app.use(ExpressMongoSanitize());
 app.use("/api/v1/auth", AuthRouter);
 app.use("/api/v1/user", AutheticateUser, UserRouter);
 app.use("/api/v1/file", AutheticateUser, FileRouter);
+app.use("/api/v1/url", AutheticateUser, UrlRouter);
 
 // app.get("*", (req, res) => {
 //   res.sendFile(path.resolve(__dirname, "./client/dist", "index.html"));
@@ -81,10 +82,11 @@ const port = process.env.PORT || 5000;
 const start = async () => {
   try {
     await connectDB(process.env.MONGO_URI);
-    console.log("Database Connected");
+    console.log("Database Connected")
     app.listen(port, () => {
       console.log(`Listening on port ${port}...`);
     });
+    cronJob()
   } catch (error) {
     console.log(error);
   }
