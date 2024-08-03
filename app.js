@@ -26,14 +26,13 @@ import FileRouter from "./routes/FileRouter.js";
 import UrlRouter from "./routes/UrlRouter.js";
 
 // Cron Job
-import cronJob from './cron_jobs/index.js'
+import cronJob from "./cron_jobs/index.js";
 
 import { AutheticateUser } from "./middleware/authentication.js";
 
 // Error Handlers
 import ErrorHandlerMiddleware from "./middleware/error-handler.js";
 import NotFoundMiddleware from "./middleware/error-handler.js";
-
 
 app.set("trust proxy", 1);
 app.use(express.json());
@@ -65,6 +64,8 @@ app.use(xss());
 app.use(ExpressMongoSanitize());
 
 // Routes
+// app.get('/api/v1/docs', )
+
 app.use("/api/v1/auth", AuthRouter);
 app.use("/api/v1/user", AutheticateUser, UserRouter);
 app.use("/api/v1/file", AutheticateUser, FileRouter);
@@ -82,11 +83,11 @@ const port = process.env.PORT || 5000;
 const start = async () => {
   try {
     await connectDB(process.env.MONGO_URI);
-    console.log("Database Connected")
+    console.log("Database Connected");
     app.listen(port, () => {
       console.log(`Listening on port ${port}...`);
     });
-    cronJob()
+    cronJob();
   } catch (error) {
     console.log(error);
   }
