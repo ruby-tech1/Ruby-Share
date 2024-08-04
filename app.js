@@ -53,12 +53,12 @@ if (process.env.NODE_ENV !== "production") {
   app.use(morgan("tiny"));
 }
 
-app.use(
-  rateLimiter({
-    windowMs: 15 * 60 * 60 * 1000,
-    max: 60,
-  })
-);
+const limiter = rateLimiter({
+  windowMs: 15 * 60 * 60 * 1000,
+  max: 60,
+  standardHeaders: true,
+  legacyHeaders: false,
+});
 app.use(cors());
 app.use(helmet());
 app.use(xss());
@@ -66,8 +66,8 @@ app.use(xss());
 // Routes
 // app.get('/api/v1/docs', )
 
-app.use("/api/v1/auth", AuthRouter);
-app.use("/api/v1/user", AutheticateUser, UserRouter);
+app.use("/api/v1/auth", limiter, AuthRouter);
+app.use("/api/v1/user", limiter, AutheticateUser, UserRouter);
 app.use("/api/v1/file", AutheticateUser, FileRouter);
 app.use("/api/v1/url", AutheticateUser, UrlRouter);
 
