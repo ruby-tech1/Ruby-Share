@@ -1,4 +1,4 @@
-import File from "../db/models/Files.js";
+import File from "../db/models/files.js";
 import {
   updateFileService,
   createFileService,
