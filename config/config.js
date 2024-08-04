@@ -3,6 +3,7 @@ dotenv.config();
 
 export default {
   development: {
+    url: process.env.DB_URL,
     dialect: "postgres",
     logging: false,
   },
@@ -11,6 +12,7 @@ export default {
     logging: false,
   },
   production: {
+    url: process.env.DB_URL,
     dialect: "postgres",
     logging: false,
   },
