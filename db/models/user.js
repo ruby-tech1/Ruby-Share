@@ -1,6 +1,6 @@
 "use strict";
 
-import sequelize from "../../config/connectdb.js";
+import sequelize from "../../config/connectDb.js";
 import CustomError from "../../errors/index.js";
 
 import { DataTypes } from "sequelize";
