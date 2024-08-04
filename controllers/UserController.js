@@ -1,4 +1,4 @@
-import User from "../db/models/User.js";
+import User from "../db/models/users.js";
 import { Op } from "sequelize";
 import { StatusCodes } from "http-status-codes";
 import CustomError from "../errors/index.js";
