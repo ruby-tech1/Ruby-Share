@@ -1,6 +1,8 @@
 import { nanoid } from "nanoid";
-import Url from "../models/Url.js";
-import File from "../models/File.js";
+import { Op } from "sequelize";
+import Url from "../db/models/urls.js";
+import File from "../db/models/files.js";
+import GenerateFileUrl from "../services/File/GenerateFileUrl..js";
 import CustomError from "../errors/index.js";
 import { StatusCodes } from "http-status-codes";
 
@@ -11,18 +13,18 @@ export const GetUrl = async (req, res) => {
     throw new CustomError.BadRequestError("Invalid Url");
   }
 
-  const url = await Url.findOne({ urlId });
+  const url = await Url.findOne({ where: { urlId } });
   if (!url) {
     throw new CustomError.BadRequestError("Invalid Url");
   }
 
-  const file = await File.findOne({ _id: url.file });
+  const file = await File.findOne({ where: { id: url.fileId } });
 
-  const sharedUser = file.sharedUsers.find((user) => {
-    return user.toString() === req.user.userId;
+  const sharedUser = await File.findOne({
+    where: { sharedUsers: { [Op.contains]: [req.user.userId] } },
   });
 
-  if (file.user.toString() !== req.user.userId && !sharedUser) {
+  if (file.userId !== req.user.userId && !sharedUser) {
     throw new CustomError.UnauthorizedError("Unauthorized access");
   }
 
@@ -34,18 +36,18 @@ export const GetUrl = async (req, res) => {
   res.status(StatusCodes.OK).redirect(url.origUrl);
 };
 
-export const createUrl = async ({ file, S3 }) => {
-  if (!file || !S3) {
+export const createUrl = async ({ file }) => {
+  if (!file) {
     throw new CustomError.BadRequestError("Please provide Url");
   }
 
-  let url = await Url.findOne({ file: file._id });
+  let url = await Url.findOne({ where: { fileId: file.id } });
   if (url) {
     return url.shortUrl;
   }
 
   const urlId = nanoid();
-  const origUrl = await file.getUrl({ S3Client: S3, fileName: file.fileName });
+  const origUrl = await GenerateFileUrl({ fileName: file.fileName });
   const expireAt = new Date(
     Date.now() + Number(process.env.FILE_EXPIRE) * 1000
   );
@@ -55,7 +57,7 @@ export const createUrl = async ({ file, S3 }) => {
     origUrl,
     shortUrl: `${process.env.ORIGIN}/api/v1/url/${urlId}`,
     expireAt,
-    file,
+    fileId: file.id,
   });
 
   return url.shortUrl;

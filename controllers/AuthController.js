@@ -1,29 +1,25 @@
-import User from "../models/User.js";
-import Token from "../models/Token.js";
+import User from "../db/models/user.js";
+import Token from "../db/models/token.js";
 import {
   attachCookieToResponse,
   createTokenUser,
-  sendVerificationEmail,
-  sendResetPasswordEmail,
   createHash,
 } from "../utils/index.js";
+import eventEmitter from "../events/eventEmitter.js";
 import { StatusCodes } from "http-status-codes";
 import CustomError from "../errors/index.js";
 import crypto from "crypto";
 import otp from "otp-generator";
 
-const register = async (req, res) => {
+export const register = async (req, res) => {
   const { email, name, password } = req.body;
 
-  const emailAlreadyExist = await User.findOne({ email });
+  const emailAlreadyExist = await User.findOne({ where: { email } });
+
   if (emailAlreadyExist) {
     throw new CustomError.BadRequestError("Email already exist");
   }
 
-  // const isFirstAccount = (await User.countDocuments({})) === 0;
-  // const role = isFirstAccount ? "admin" : "user";
-
-  // const verificationCode = crypto.randomBytes(40).toString("hex");
   let tempVerificationCode = otp.generate(6, {
     upperCaseAlphabets: false,
     lowerCaseAlphabets: false,
@@ -49,11 +45,7 @@ const register = async (req, res) => {
   // const fowardedProtocol = req.get('x-forwarded-proto')
   // console.log(`origin: ${originEx}, protocol: ${protocol}, host: ${host}, forwardedHost: ${fowardedHost} forwardedprotocol: ${fowardedProtocol}`)
 
-  await sendVerificationEmail({
-    name: user.name,
-    email: user.email,
-    code: tempVerificationCode,
-  });
+  eventEmitter.emit("sendVerification", { user });
 
   tempVerificationCode = "";
 
@@ -62,13 +54,13 @@ const register = async (req, res) => {
   });
 };
 
-const login = async (req, res) => {
+export const login = async (req, res) => {
   const { email, password } = req.body;
   if (!email || !password) {
     throw new CustomError.BadRequestError("Please provide email and password");
   }
 
-  const user = await User.findOne({ email });
+  const user = await User.findOne({ where: { email } });
   if (!user) {
     throw new CustomError.UnauthenticatedError(
       "Please provide valid credentials"
@@ -92,7 +84,7 @@ const login = async (req, res) => {
   let refreshToken = "";
 
   // check for existing token
-  const existingToken = await Token.findOne({ user: user._id });
+  const existingToken = await Token.findOne({ where: { userId: user.id } });
   if (existingToken) {
     const { isValid } = existingToken;
     if (!isValid) {
@@ -107,7 +99,7 @@ const login = async (req, res) => {
   refreshToken = crypto.randomBytes(40).toString("hex");
   const userAgent = req.headers["user-agent"];
   const ip = req.ip;
-  const userToken = { refreshToken, ip, userAgent, user: user._id };
+  const userToken = { refreshToken, ip, userAgent, userId: user.id };
 
   await Token.create(userToken);
 
@@ -118,8 +110,8 @@ const login = async (req, res) => {
   });
 };
 
-const logout = async (req, res) => {
-  await Token.findOneAndDelete({ user: req.user.userId });
+export const logout = async (req, res) => {
+  await Token.destroy({ where: { userId: req.user.userId } });
 
   res.cookie("accessToken", "logout", {
     httpOnly: true,
@@ -134,9 +126,9 @@ const logout = async (req, res) => {
   res.status(StatusCodes.OK).json({ success: true });
 };
 
-const verifyEmail = async (req, res) => {
+export const verifyEmail = async (req, res) => {
   const { verificationCode, email } = req.body;
-  const user = await User.findOne({ email });
+  const user = await User.findOne({ where: { email } });
 
   if (!user) {
     throw new CustomError.UnauthenticatedError("Verification Failed");
@@ -154,24 +146,19 @@ const verifyEmail = async (req, res) => {
   res.status(StatusCodes.OK).json({ msg: "Email Verified" });
 };
 
-const forgotPassword = async (req, res) => {
+export const forgotPassword = async (req, res) => {
   const { email } = req.body;
   if (!email) {
     throw new CustomError.BadRequestError("Please provide valid email");
   }
 
-  const user = await User.findOne({ email });
+  const user = await User.findOne({ where: { email } });
   if (user) {
     const passwordToken = crypto.randomBytes(70).toString("hex");
     const fifteenMinutes = 1000 * 60 * 15;
 
     // send email
-    await sendResetPasswordEmail({
-      name: user.name,
-      email: user.email,
-      passwordToken,
-      origin: process.env.ORIGIN,
-    });
+    eventEmitter.emit("forgotPassword", { user, passwordToken });
 
     const passwordTokenExpirationDate = new Date(Date.now() + fifteenMinutes);
     user.passwordToken = createHash(passwordToken);
@@ -184,17 +171,18 @@ const forgotPassword = async (req, res) => {
     .json({ msg: "Please check email for reset password link" });
 };
 
-const resetPassword = async (req, res) => {
+export const resetPassword = async (req, res) => {
   const { email, password, token } = req.body;
 
   if (!email || !password || !token) {
     throw new CustomError.BadRequestError("Please provide all values");
   }
 
-  const user = await User.findOne({ email });
+  const user = await User.findOne({ where: { email } });
 
   if (user) {
     const currentDate = new Date();
+    console.log(createHash(token));
     if (
       user.passwordToken === createHash(token) &&
       user.passwordTokenExpirationDate > currentDate
@@ -208,5 +196,3 @@ const resetPassword = async (req, res) => {
 
   res.status(StatusCodes.OK).json({ msg: "reset password" });
 };
-
-export { login, logout, register, verifyEmail, forgotPassword, resetPassword };

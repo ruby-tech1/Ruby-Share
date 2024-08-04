@@ -1,21 +1,20 @@
 import dotenv from "dotenv";
 dotenv.config();
 import "express-async-errors";
+import "./events/index.js";
 
 import express from "express";
 const app = express();
 
 // Database Connection
-import connectDB from "./db/connect.js";
+import connectDB from "./config/connectDb.js";
 
 // Extra Packages
 import morgan from "morgan";
 import cookieParser from "cookie-parser";
 import fileUpload from "express-fileupload";
-
 import cors from "cors";
 import helmet from "helmet";
-import ExpressMongoSanitize from "express-mongo-sanitize";
 import xss from "xss-clean";
 import rateLimiter from "express-rate-limit";
 
@@ -50,7 +49,9 @@ app.use(
     // responseOnLimit: "file is larger",
   })
 );
-app.use(morgan("tiny"));
+if (process.env.NODE_ENV !== "production") {
+  app.use(morgan("tiny"));
+}
 
 app.use(
   rateLimiter({
@@ -61,7 +62,6 @@ app.use(
 app.use(cors());
 app.use(helmet());
 app.use(xss());
-app.use(ExpressMongoSanitize());
 
 // Routes
 // app.get('/api/v1/docs', )
@@ -82,7 +82,7 @@ app.use(ErrorHandlerMiddleware);
 const port = process.env.PORT || 5000;
 const start = async () => {
   try {
-    await connectDB(process.env.MONGO_URI);
+    await connectDB.sync();
     console.log("Database Connected");
     app.listen(port, () => {
       console.log(`Listening on port ${port}...`);

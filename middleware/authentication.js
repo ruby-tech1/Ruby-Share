@@ -1,6 +1,6 @@
 import CustomError from "../errors/index.js";
 import { isTokenValid, attachCookieToResponse } from "../utils/index.js";
-import Token from "../models/Token.js";
+import Token from "../db/models/token.js";
 // import { attachCookieToResponse } from "../utils";
 
 const AutheticateUser = async (req, res, next) => {
@@ -15,8 +15,10 @@ const AutheticateUser = async (req, res, next) => {
     const payload = isTokenValid(refreshToken);
 
     const existingToken = await Token.findOne({
-      user: payload.user.userId,
-      refreshToken: payload.refreshToken,
+      where: {
+        userId: payload.user.userId,
+        refreshToken: payload.refreshToken,
+      },
     });
 
     if (!existingToken || !existingToken?.isValid) {
