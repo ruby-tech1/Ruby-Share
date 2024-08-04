@@ -1,7 +1,8 @@
-import Url from "../models/Url.js";
+import Url from "../db//models/urls.js";
+import { Op } from "sequelize";
 
 export const RemoveUrl = async () => {
-  await Url.deleteMany({ expireAt: { $lt: new Date(Date.now()) } });
+  await Url.destroy({ where: { expireAt: { [Op.lt]: new Date(Date.now()) } } });
 
   console.log("Expires Urls deleted");
 };

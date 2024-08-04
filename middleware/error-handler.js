@@ -1,20 +1,14 @@
-// const { CustomAPIError } = require('../errors')
 import { StatusCodes } from "http-status-codes";
 const errorHandlerMiddleware = (err, req, res, next) => {
   if (process.env.NODE_ENV !== "production") {
     console.log(err);
   }
-  // console.log(err);
 
   let customError = {
     // set default
     statusCode: err.statusCode || StatusCodes.INTERNAL_SERVER_ERROR,
     msg: err.message || "Something went wrong, Try aain later",
   };
-
-  // if (err instanceof CustomAPIError) {
-  //   return res.status(err.statusCode).json({ msg: err.message })
-  // }
 
   if (err.name === "ValidationError") {
     customError.msg = Object.values(err.errors)
@@ -40,7 +34,6 @@ const errorHandlerMiddleware = (err, req, res, next) => {
     customError.statusCode = 400;
   }
 
-  // return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({ err });
   return res.status(customError.statusCode).json({ msg: customError.msg });
 };
 
