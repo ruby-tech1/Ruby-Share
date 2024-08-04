@@ -58,7 +58,7 @@ const limiter = rateLimiter({
   max: 60,
   standardHeaders: true,
   legacyHeaders: false,
-  ketGenerator: request.ip.replace(/:\d+[^:]*$/, ""),
+  keyGenerator: (req) => req.ip.replace(/:\d+[^:]*$/, ""),
 });
 app.use(cors());
 app.use(helmet());
