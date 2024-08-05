@@ -17,7 +17,7 @@ export default {
     logging: false,
   },
   // production: {
-  //   url: "postgresql://test_dev_5ssc_user:bCaUQwFn0N5ZPXdfra6taf4vPSlAPeEz@dpg-cqn69slsvqrc73fk8cvg-a.oregon-postgres.render.com/test_dev_5ssc",
+  //   url: "db url",
   //   dialect: "postgres",
   //   logging: false,
   //   dialectOptions: {
