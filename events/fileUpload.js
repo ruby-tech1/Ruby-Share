@@ -3,6 +3,7 @@ import { promises as fs } from "fs";
 import { randomHash, S3Client } from "../utils/index.js";
 import { DeleteObjectCommand, PutObjectCommand } from "@aws-sdk/client-s3";
 import Files from "../db/models/files.js";
+import { createActivity } from "../controllers/ActivitiesController.js";
 
 eventEmitter.on("fileCreated", async ({ file, userId }) => {
   const fileContent = await fs.readFile(file.tempFilePath);
@@ -25,6 +26,11 @@ eventEmitter.on("fileCreated", async ({ file, userId }) => {
   });
 
   await fs.unlink(file.tempFilePath);
+  await createActivity({
+    userId,
+    propertyId: file.id,
+    activityType: "created file",
+  });
 });
 
 eventEmitter.on("fileDeleted", async ({ fileName }) => {

@@ -134,5 +134,6 @@ export const updateFileService = async (param) => {
   }
 
   file = await file.save();
+
   return file;
 };

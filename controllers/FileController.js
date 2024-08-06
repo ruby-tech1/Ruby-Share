@@ -4,6 +4,7 @@ import {
   createFileService,
   GetAllFilesService,
 } from "../services/File/File.js";
+import { createActivity } from "./ActivitiesController.js";
 import { createUrl } from "./UrlController.js";
 import { StatusCodes } from "http-status-codes";
 import CustomError from "../errors/index.js";
@@ -41,6 +42,10 @@ export const getAllFiles = async (req, res) => {
     userId,
   });
 
+  await createActivity({
+    userId,
+    activityType: "get files",
+  });
   res.status(StatusCodes.OK).json({ nHits: files.length, files });
 };
 
@@ -76,6 +81,10 @@ export const getSingleFile = async (req, res) => {
     url,
   };
 
+  await createActivity({
+    userId,
+    activityType: "get file",
+  });
   res.status(StatusCodes.OK).json({ file: tempFile });
 };
 
@@ -95,6 +104,11 @@ export const updateFile = async (req, res) => {
     userEmail,
   });
 
+  await createActivity({
+    userId,
+    propertyId: fileId,
+    activityType: "updated file",
+  });
   res.status(StatusCodes.CREATED).json({ file });
 };
 
@@ -112,9 +126,16 @@ export const deleteFIle = async (req, res) => {
     throw new CustomError.NotFoundError("File not found");
   }
 
-  eventEmitter.emit("fileDeleted", { fileName: file.fileName }); // In complete production don't delete the file.
+  eventEmitter.emit("fileDeleted", {
+    fileName: file.fileName,
+  }); // In complete production don't delete the file.
 
   await File.destroy({ where: { id: fileId } });
 
+  await createActivity({
+    userId,
+    propertyId: fileId,
+    activityType: "updated file",
+  });
   res.status(StatusCodes.OK).json({ msg: "File Deleted" });
 };

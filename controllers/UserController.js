@@ -1,4 +1,5 @@
 import User from "../db/models/user.js";
+import { createActivity } from "./ActivitiesController.js";
 import { Op } from "sequelize";
 import { StatusCodes } from "http-status-codes";
 import CustomError from "../errors/index.js";
@@ -54,6 +55,7 @@ export const getAllUsers = async (req, res) => {
     offset: skip,
   });
 
+  await createActivity({ userId: req.user.userId, activityType: "get users" });
   res.status(StatusCodes.OK).json({ users });
 };
 
@@ -70,6 +72,7 @@ export const getSingleUser = async (req, res) => {
 
   checkPermissions(req.user, user.id);
 
+  await createActivity({ userId: req.user.userId, activityType: "get user" });
   res.status(StatusCodes.OK).json({ user });
 };
 export const showCurrentUser = async (req, res) => {
@@ -92,6 +95,10 @@ export const updateUser = async (req, res) => {
   const tokenUser = createTokenUser({ user });
   attachCookieToResponse({ res, tokenUser });
 
+  await createActivity({
+    userId: req.user.userId,
+    activityType: "updated user",
+  });
   res.status(StatusCodes.OK).json({ user: tokenUser });
 };
 
@@ -111,5 +118,9 @@ export const updateUserPassword = async (req, res) => {
   user.password = newPassword;
   await user.save();
 
+  await createActivity({
+    userId: req.user.userId,
+    activityType: "updated password",
+  });
   res.status(StatusCodes.OK).json({ msg: "success! password updated" });
 };

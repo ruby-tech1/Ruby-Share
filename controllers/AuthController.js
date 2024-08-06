@@ -1,5 +1,6 @@
 import User from "../db/models/user.js";
 import Token from "../db/models/token.js";
+import { createActivity } from "./ActivitiesController.js";
 import {
   attachCookieToResponse,
   createTokenUser,
@@ -25,7 +26,9 @@ export const register = async (req, res) => {
     lowerCaseAlphabets: false,
     specialChars: false,
   });
-  console.log(tempVerificationCode);
+  if (process.env.NODE_ENV !== "production") {
+    console.log(tempVerificationCode);
+  }
 
   const user = await User.create({
     email,
@@ -48,6 +51,8 @@ export const register = async (req, res) => {
   eventEmitter.emit("sendVerification", { user });
 
   tempVerificationCode = "";
+
+  await createActivity({ userId: user.id, activityType: "created user" });
 
   res.status(StatusCodes.CREATED).json({
     msg: "Success, Please check email to verify account",
@@ -92,6 +97,7 @@ export const login = async (req, res) => {
     }
     refreshToken = existingToken.refreshToken;
     attachCookieToResponse({ res, tokenUser, refreshToken });
+    await createActivity({ userId: user.id, activityType: "login" });
     res.status(StatusCodes.OK).json({ user: tokenUser });
     return;
   }
@@ -105,6 +111,7 @@ export const login = async (req, res) => {
 
   attachCookieToResponse({ res, tokenUser, refreshToken });
 
+  await createActivity({ userId: user.id, activityType: "login" });
   res.status(StatusCodes.OK).json({
     user: tokenUser,
   });
@@ -123,6 +130,7 @@ export const logout = async (req, res) => {
     expires: new Date(Date.now()),
   });
 
+  await createActivity({ userId: req.user.userId, activityType: "logout" });
   res.status(StatusCodes.OK).json({ success: true });
 };
 
@@ -194,5 +202,6 @@ export const resetPassword = async (req, res) => {
     }
   }
 
+  await createActivity({ userId: user.id, activityType: "updated password" });
   res.status(StatusCodes.OK).json({ msg: "reset password" });
 };
