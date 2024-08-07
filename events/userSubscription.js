@@ -14,10 +14,10 @@ eventEmitter.on("sendVerification", async ({ user }) => {
   });
 });
 
-eventEmitter.on("userCreated", async ({ user, passwordToken }) => {
+eventEmitter.on("forgotPassword", async ({ user, passwordToken }) => {
   await sendResetPasswordEmail({
     name: user.name,
-    email: user.name,
+    email: user.email,
     passwordToken,
     origin: process.env.ORIGIN,
   });
