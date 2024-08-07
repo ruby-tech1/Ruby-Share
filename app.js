@@ -31,7 +31,7 @@ import { AutheticateUser } from "./middleware/authentication.js";
 
 // Error Handlers
 import ErrorHandlerMiddleware from "./middleware/error-handler.js";
-import NotFoundMiddleware from "./middleware/error-handler.js";
+import NotFoundMiddleware from "./middleware/not-found.js";
 
 app.set("trust proxy", 1);
 app.use(express.json());
