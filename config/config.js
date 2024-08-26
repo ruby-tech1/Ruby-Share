@@ -11,22 +11,22 @@ export default {
     dialect: "postgres",
     logging: false,
   },
+  // production: {
+  //   url: process.env.DB_URL,
+  //   dialect: "postgres",
+  //   logging: false,
+  // },
   production: {
     url: process.env.DB_URL,
     dialect: "postgres",
     logging: false,
+    dialectOptions: {
+      ssl: {
+        require: true,
+        rejectUnauthorized: false,
+      },
+    },
   },
-  // production: {
-  //   url: "db url",
-  //   dialect: "postgres",
-  //   logging: false,
-  //   dialectOptions: {
-  //     ssl: {
-  //       require: true,
-  //       rejectUnauthorized: false,
-  //     },
-  //   },
-  // },
 };
 
 // {
